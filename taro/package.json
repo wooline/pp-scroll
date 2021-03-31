@@ -1,0 +1,7 @@
+{
+  "name": "pp-scroll",
+  "version": "1.0.0",
+  "description": "",
+  "main": "../dist/cjs/taro",
+  "types": "../types"
+}
