@@ -1,4 +1,5 @@
 import React, {useCallback, useState, useMemo, ReactNode} from 'react';
+import {View, Text, Picker} from '@tarojs/components';
 
 export interface ToolsProps {
   className?: string;
@@ -66,26 +67,26 @@ const Component: React.FC<ToolsProps> = ({show, loading, curPage, totalPages, on
   }, [curPageNum, totalPages]);
 
   return (
-    <div className={`ppscroll-tools ${className || ''} ${state} ${loading ? 'loading' : ''}`}>
-      <div className="wrap">
+    <View className={`ppscroll-tools ${className || ''} ${state} ${loading ? 'loading' : ''}`}>
+      <View className="wrap">
         {children ? (
-          <div className="panel">{children}</div>
+          <View className="panel">{children}</View>
         ) : (
-          <div className="panel">
-            <div className="refresh ppscroll-icon ppscroll-icon-reload" onClick={onRefresh} />
-            <div className="pagination ppscroll-icon ppscroll-icon-backward" onClick={onTurningToStart} />
-            <div className="goto">
-              <span className="cur">{curPageStr}</span> / {totalPages}
+          <View className="panel">
+            <View className="refresh ppscroll-icon ppscroll-icon-reload" onClick={onRefresh} />
+            <View className="pagination ppscroll-icon ppscroll-icon-backward" onClick={onTurningToStart} />
+            <View className="goto">
+              <Text className="cur">{curPageStr}</Text> / {totalPages}
               <select className="selector" onChange={onPageChange} value={curPageNum}>
                 {PageOptions}
               </select>
-            </div>
-            <div className="pagination ppscroll-icon ppscroll-icon-forward" onClick={onTurningToEnd} />
-          </div>
+            </View>
+            <View className="pagination ppscroll-icon ppscroll-icon-forward" onClick={onTurningToEnd} />
+          </View>
         )}
-      </div>
-      <div className="trigger ppscroll-icon ppscroll-icon-colum-height" onClick={switchActive} />
-    </div>
+      </View>
+      <View className="trigger ppscroll-icon ppscroll-icon-colum-height" onClick={switchActive} />
+    </View>
   );
 };
 

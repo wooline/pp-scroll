@@ -2,7 +2,7 @@
 import React, {ReactNode, PureComponent} from 'react';
 import {ScrollView, View} from '@tarojs/components';
 import Taro from '@tarojs/taro';
-import Tools from './tools';
+import Tools from './Tools';
 
 export interface DataSource<T = any> {
   sid: number;
@@ -372,7 +372,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
           upperThreshold={100}
           lowerThreshold={100}
         >
-          <View id={iid}>
+          <View id={iid} className="ppscroll-content">
             {topArea(firstPage > 1 || forceShowPrevMore, firstPage - 1, actionState === 'prev' || actionState === 'prev-reclaiming')}
             {listComponent}
             {bottomArea(secondPage < totalPages, secondPage + 1, actionState === 'next' || actionState === 'next-reclaiming')}

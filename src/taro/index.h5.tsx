@@ -1,7 +1,6 @@
-/* eslint-disable no-nested-ternary */
 import React, {ReactNode, RefObject, PureComponent} from 'react';
-import {ScrollView, View} from '@tarojs/components';
-import Tools from './tools';
+import {View, ScrollView} from '@tarojs/components';
+import Tools from './Tools';
 
 export interface DataSource<T = any> {
   sid: number;
@@ -367,7 +366,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
   }
 
   render() {
-    const {className = 'g-scroll-view', children, tools = this.defaultTools, topArea = defaultTopArea, bottomArea = defaultBottomArea} = this.props;
+    const {className = '', children, tools = this.defaultTools, topArea = defaultTopArea, bottomArea = defaultBottomArea} = this.props;
     const {page, list, scrollTop, actionState, scrollState, totalPages, loadingState, showTools} = this.state;
     const [firstPage, secondPage] = typeof page === 'object' ? page : [page, page];
     const listComponent = this.useMemo(this.listComponentCache, () => children(list || []), [list]);
@@ -389,7 +388,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
           upperThreshold={100}
           lowerThreshold={100}
         >
-          <View>
+          <View className="ppscroll-content">
             {topArea(firstPage > 1, firstPage - 1, actionState === 'prev' || actionState === 'prev-reclaiming')}
             {listComponent}
             {bottomArea(secondPage < totalPages, secondPage + 1, actionState === 'next' || actionState === 'next-reclaiming')}

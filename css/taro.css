@@ -29,6 +29,16 @@
 }
 .ppscroll {
   height: 100%;
+}
+.ppscroll-view {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: auto;
+}
+.ppscroll-view::-webkit-scrollbar {
+  display: none;
+}
+.ppscroll-content {
   position: relative;
 }
 .ppscroll-tips {
@@ -115,7 +125,7 @@
   color: #333;
 }
 .ppscroll-tools .wrap {
-  width: 400px;
+  width: 420px;
   height: 100px;
   right: 50px;
   bottom: 0;
@@ -124,7 +134,7 @@
   transition: width ease-in 0.2s;
 }
 .ppscroll-tools .panel {
-  width: 400px;
+  width: 420px;
   height: 80px;
   line-height: 80px;
   margin-top: 12px;
@@ -163,7 +173,24 @@
   background-color: #fff;
   padding: 0 20px;
   min-width: 80px;
+  position: relative;
 }
 .ppscroll-tools .cur {
   color: #09f;
+}
+.ppscroll-tools .selector {
+  position: absolute;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  appearance: none;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  font-size: 0;
+  left: 0;
+  top: 0;
+  text-align: center;
 }
