@@ -9,6 +9,7 @@ export interface DataSource<T = any> {
   totalPages: number;
   scrollTop?: number;
   firstSize?: number;
+  errorCode?: string;
 }
 interface Props<T = any> {
   className?: string;
@@ -17,8 +18,9 @@ interface Props<T = any> {
   onUnmount: (page: [number, number] | number, scrollTop: number) => void;
   children: (list: T[]) => ReactNode;
   tools?: (curPage: [number, number] | number, totalPages: number, show: boolean, loading: boolean, onTurning: (page?: number) => void) => ReactNode;
-  topArea?: (morePage: boolean, prevPage: number, loading: boolean) => ReactNode;
-  bottomArea?: (morePage: boolean, nextPage: number, loading: boolean) => ReactNode;
+  topArea?: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string) => ReactNode;
+  bottomArea?: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string) => ReactNode;
+  timeout?: number;
 }
 interface State<T = any> extends Required<DataSource<T>> {
   datasource: DataSource<T> | null;
@@ -27,7 +29,8 @@ interface State<T = any> extends Required<DataSource<T>> {
   lockState: State<T> | null;
   actionState: '' | 'next' | 'prev' | 'prev-reclaiming' | 'next-reclaiming';
   scrollState: '' | 'up' | 'down';
-  loadingState: boolean;
+  loadingState: number;
+  errorCode: string;
   showTools: boolean;
 }
 interface MemoCache {
@@ -35,11 +38,11 @@ interface MemoCache {
   depes?: any[];
 }
 
-const defaultTopArea = (morePage: boolean, prevPage: number, loading: boolean) => {
+const defaultTopArea = (morePage: boolean, prevPage: number, loading: boolean, errorCode: string) => {
   return morePage && <View className={`ppscroll-tips ${loading ? ' loading' : ''}`}>Loading</View>;
 };
 
-const defaultBottomArea = (morePage: boolean, nextPage: number, loading: boolean) => {
+const defaultBottomArea = (morePage: boolean, nextPage: number, loading: boolean, errorCode: string) => {
   return morePage ? <View className={`ppscroll-tips ${loading ? ' loading' : ''}`}>Loading</View> : <View className="ppscroll-tips">NO MORE</View>;
 };
 
@@ -56,6 +59,23 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
       datasource = prevState.cacheDatasource;
     }
     if (datasource) {
+      if (datasource.sid >= prevState.sid) {
+        if (prevState.loadingState) {
+          clearTimeout(prevState.loadingState);
+        }
+        if (datasource.errorCode) {
+          Object.assign(newState, {
+            lockState: null,
+            actionState: '',
+            scrollState: '',
+            loadingState: 0,
+            errorCode: datasource.errorCode,
+            showTools: false,
+            sid: datasource.sid,
+          });
+          return newState;
+        }
+      }
       if (datasource.sid > prevState.sid) {
         const sourceCache = {};
         if (typeof datasource.page === 'number') {
@@ -73,7 +93,8 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
           lockState: null,
           actionState: '',
           scrollState: '',
-          loadingState: false,
+          loadingState: 0,
+          errorCode: '',
           showTools: false,
           sid: datasource.sid,
           list: datasource.list,
@@ -97,7 +118,8 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
               lockState: null,
               actionState: 'prev-reclaiming',
               scrollState: '',
-              loadingState: false,
+              loadingState: 0,
+              errorCode: '',
               list: [...datasource.list, ...curList],
               page: [datasource.page, curPage],
               firstSize: datasource.list.length,
@@ -107,7 +129,8 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
               lockState: null,
               actionState: 'next-reclaiming',
               scrollState: '',
-              loadingState: false,
+              loadingState: 0,
+              errorCode: '',
               list: [...curList, ...datasource.list],
               page: [curPage, datasource.page],
               firstSize: curList.length,
@@ -131,7 +154,8 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     lockState: null,
     actionState: '',
     scrollState: '',
-    loadingState: false,
+    loadingState: 0,
+    errorCode: '',
     showTools: false,
     sid: -1,
     list: [],
@@ -163,32 +187,6 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     super(props);
     this.listRef = React.createRef();
   }
-
-  // 回收视口上方的项目会自动调整scrollTop
-  // getSnapshotBeforeUpdate(prevProps: Props, prevState: State) {
-  //   const curActionState = this.state.actionState;
-  //   const prevActionState = prevState.actionState;
-  //   if ((curActionState === 'next' && prevActionState === '') || (curActionState === '' && prevActionState === 'prev')) {
-  //     const list = this.listRef.current;
-  //     return [list.scrollHeight, list.scrollTop];
-  //   }
-  //   return null;
-  // }
-
-  // 回收视口上方的项目会自动调整scrollTop
-  // componentDidUpdate(prevProps: Props, prevState: State, snapshot: [number, number]) {
-  //   const curActionState = this.state.actionState;
-  //   const prevActionState = prevState.actionState;
-  //   if (snapshot) {
-  //     const [prevScrollHeight, prevScrollTop] = snapshot;
-  //     const ul = this.listRef.current;
-  //     if (curActionState === 'next') {
-  //       // ul.scrollTop = prevScrollTop - (prevScrollHeight - ul.scrollHeight);
-  //     } else if (prevActionState === 'prev') {
-  //       ul.scrollTop = prevScrollTop + (ul.scrollHeight - prevScrollHeight);
-  //     }
-  //   }
-  // }
 
   getSnapshotBeforeUpdate(prevProps: Props, prevState: State) {
     const curActionState = this.state.actionState;
@@ -230,8 +228,8 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
   }
 
   onScrollToLower = () => {
-    const {actionState, page, list, firstSize, sourceCache, totalPages} = this.state;
-    if (actionState === '' || actionState === 'prev') {
+    const {actionState, page, list, firstSize, sourceCache, totalPages, errorCode} = this.state;
+    if (!errorCode && (actionState === '' || actionState === 'prev')) {
       const secondPage = typeof page === 'object' ? page[1] : page;
       const secondList = typeof page === 'object' ? list.slice(firstSize) : list;
       if (secondPage < totalPages) {
@@ -264,8 +262,8 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
   };
 
   onScrollToUpper = () => {
-    const {actionState, page, list, firstSize, sourceCache} = this.state;
-    if (actionState === '' || actionState === 'next') {
+    const {actionState, page, list, firstSize, sourceCache, errorCode} = this.state;
+    if (!errorCode && (actionState === '' || actionState === 'next')) {
       const firstPage = typeof page === 'object' ? page[0] : page;
       const firstList = typeof page === 'object' ? list.slice(0, firstSize) : list;
       if (firstPage > 1) {
@@ -326,7 +324,13 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
   };
 
   onTurning = (page: [number, number] | number, sid: number) => {
-    this.setState({loadingState: true});
+    if (this.state.loadingState) {
+      clearTimeout(this.state.loadingState);
+    }
+    const loadingState = setTimeout(() => {
+      this.setState({loadingState: 0, errorCode: 'timeout'});
+    }, this.props.timeout || 5000);
+    this.setState({loadingState, errorCode: ''});
     this.props.onTurning(page, sid);
   };
 
@@ -367,16 +371,16 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
 
   render() {
     const {className = '', children, tools = this.defaultTools, topArea = defaultTopArea, bottomArea = defaultBottomArea} = this.props;
-    const {page, list, scrollTop, actionState, scrollState, totalPages, loadingState, showTools} = this.state;
+    const {page, list, scrollTop, actionState, scrollState, totalPages, loadingState, errorCode, showTools} = this.state;
     const [firstPage, secondPage] = typeof page === 'object' ? page : [page, page];
     const listComponent = this.useMemo(this.listComponentCache, () => children(list || []), [list]);
     if (actionState === '') {
       this.prevPageNum = page;
     }
-    this.switchTools(!!scrollState || loadingState);
+    this.switchTools(!!scrollState || !loadingState);
     return (
       <>
-        {tools(this.prevPageNum, totalPages, showTools, loadingState, this.onToolsTurning)}
+        {tools(this.prevPageNum, totalPages, showTools, !!loadingState, this.onToolsTurning)}
         <ScrollView
           ref={this.listRef}
           className={`ppscroll ${className} ${loadingState ? 'loading' : ''}`}
@@ -389,9 +393,9 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
           lowerThreshold={100}
         >
           <View className="ppscroll-content">
-            {topArea(firstPage > 1, firstPage - 1, actionState === 'prev' || actionState === 'prev-reclaiming')}
+            {topArea(firstPage > 1, firstPage - 1, actionState === 'prev' || actionState === 'prev-reclaiming', errorCode)}
             {listComponent}
-            {bottomArea(secondPage < totalPages, secondPage + 1, actionState === 'next' || actionState === 'next-reclaiming')}
+            {bottomArea(secondPage < totalPages, secondPage + 1, actionState === 'next' || actionState === 'next-reclaiming', errorCode)}
           </View>
         </ScrollView>
       </>

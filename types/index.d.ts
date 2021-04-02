@@ -6,6 +6,7 @@ export interface DataSource<T = any> {
     totalPages: number;
     scrollTop?: number;
     firstSize?: number;
+    errorCode?: string;
 }
 interface Props<T = any> {
     className?: string;
@@ -14,8 +15,9 @@ interface Props<T = any> {
     onUnmount: (page: [number, number] | number, scrollTop: number) => void;
     children: (list: T[]) => ReactNode;
     tools?: (curPage: [number, number] | number, totalPages: number, show: boolean, loading: boolean, onTurning: (page?: number) => void) => ReactNode;
-    topArea?: (morePage: boolean, prevPage: number, loading: boolean) => ReactNode;
-    bottomArea?: (morePage: boolean, nextPage: number, loading: boolean) => ReactNode;
+    topArea?: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string) => ReactNode;
+    bottomArea?: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string) => ReactNode;
+    timeout?: number;
 }
 interface State<T = any> extends Required<DataSource<T>> {
     datasource: DataSource<T> | null;
@@ -26,7 +28,8 @@ interface State<T = any> extends Required<DataSource<T>> {
     lockState: State<T> | null;
     actionState: '' | 'next' | 'prev' | 'prev-reclaiming' | 'next-reclaiming';
     scrollState: '' | 'up' | 'down';
-    loadingState: boolean;
+    loadingState: number;
+    errorCode: string;
     showTools: boolean;
 }
 interface MemoCache {
