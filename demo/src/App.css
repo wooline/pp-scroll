@@ -1,0 +1,22 @@
+.App {
+  text-align: center;
+}
+
+.app-header {
+  height: 1rem;
+  flex: none;
+  background: #333;
+  text-align: center;
+}
+.app-footer {
+  height: 1rem;
+  flex: none;
+  background: #333;
+  text-align: center;
+}
+.app-logo {
+  height: 100%;
+}
+.app-body {
+  flex: 1;
+}

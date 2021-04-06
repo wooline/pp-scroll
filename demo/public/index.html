@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <style>
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #000;
+      }
+
+      body {
+        margin: 0 auto !important;
+        padding: 0;
+        height: 100%;
+        background: #fff;
+        font-size: 100%;
+      }
+
+      #root {
+        height: 100%;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      #app-qrcode{
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        left: 0;
+        top: 0;
+        z-index: 999999999;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: none;
+      }
+      #app-qrcode .warp{
+        position: absolute;
+        width: 128px;
+        height: 150px;
+        left: 50%;
+        top: 50%;
+        padding: 10px;
+        overflow: hidden;
+        background-color: #fff;
+        border-radius: 5px;
+        margin-left: -74px;
+        margin-top: -85px;
+      }
+      #app-qrcode-img{
+        width: 128px;
+        height: 128px;
+      }
+      #app-qrcode .tips{
+        font-size: 12px;
+        text-align: center;
+        line-height: 1;
+        padding-top: 10px;
+      }
+      .g-doc-width {
+        width: 100%;
+      }
+    </style>
+    <script type="text/javascript">
+      (function () {
+        function setStyle(cssString) {
+          var style = document.createElement('style');
+          style.setAttribute('type', 'text/css');
+          if (style.styleSheet) {
+            style.styleSheet.cssText = cssString;
+          } else {
+            var cssNode = document.createTextNode(cssString);
+            style.appendChild(cssNode);
+          }
+          document.head.appendChild(style);
+        }
+        function setRem() {
+          var maxWidth = 500;
+          var documentElement = document.documentElement;
+          var clientWidth = documentElement.clientWidth;
+          var width = Math.min(maxWidth, clientWidth);
+          var rootFontSize = width / 10;
+          documentElement.style.fontSize = rootFontSize + 'px';
+          var realFont = parseFloat(window.getComputedStyle(documentElement).fontSize);
+          if (parseInt(rootFontSize) !== parseInt(realFont)) {
+            documentElement.style.fontSize = (rootFontSize * rootFontSize / realFont) + 'px'
+          }
+          var styleArr = [];
+          styleArr.push('.g-doc-width{max-width:' + maxWidth + 'px;}');
+          setStyle(styleArr.join(' '));
+        }
+        setRem();
+
+        var timer;
+        var resizeEvt = 'orientationchange' in window ? 'orientationchange' : 'resize';
+        window.addEventListener(
+          resizeEvt,
+          function () {
+            if (!timer) {
+              timer = setTimeout(function () {
+                setRem();
+                timer = null;
+              }, 1000);
+            }
+          },
+          false
+        );
+      })();
+    </script>
+    <title>React App</title>
+  </head>
+  <body class="g-doc-width">
+    <div id="root"></div>
+  </body>
+</html>

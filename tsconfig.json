@@ -21,5 +21,5 @@
     "esModuleInterop": true
   },
   "include": ["./"],
-  "exclude": ["./src","./dist"]
+  "exclude": ["./src","./dist","./demo"]
 }
