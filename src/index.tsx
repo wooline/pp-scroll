@@ -18,8 +18,8 @@ interface Props<T = any> {
   onUnmount: (page: [number, number] | number, scrollTop: number) => void;
   children: (list: T[]) => ReactNode;
   tools?: (curPage: [number, number] | number, totalPages: number, show: boolean, loading: boolean, onTurning: (page?: number) => void) => ReactNode;
-  topArea?: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string) => ReactNode;
-  bottomArea?: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string) => ReactNode;
+  topArea?: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
+  bottomArea?: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
   timeout?: number;
 }
 interface State<T = any> extends Required<DataSource<T>> {
@@ -38,12 +38,32 @@ interface MemoCache {
   depes?: any[];
 }
 
-const defaultTopArea = (morePage: boolean, prevPage: number, loading: boolean, errorCode: string) => {
-  return morePage && <View className={`ppscroll-tips ${loading ? ' loading' : ''}`}>Loading</View>;
+const defaultTopArea = (morePage: boolean, prevPage: number, loading: boolean, errorCode: string, retry: () => void) => {
+  if (morePage) {
+    if (errorCode) {
+      return (
+        <View className="ppscroll-tips error" onClick={retry}>
+          出错了，点击重试
+        </View>
+      );
+    }
+    return <View className={`ppscroll-tips ${loading ? ' loading' : ''}`}>Loading</View>;
+  }
+  return null;
 };
 
-const defaultBottomArea = (morePage: boolean, nextPage: number, loading: boolean, errorCode: string) => {
-  return morePage ? <View className={`ppscroll-tips ${loading ? ' loading' : ''}`}>Loading</View> : <View className="ppscroll-tips">NO MORE</View>;
+const defaultBottomArea = (morePage: boolean, nextPage: number, loading: boolean, errorCode: string, retry: () => void) => {
+  if (morePage) {
+    if (errorCode) {
+      return (
+        <View className="ppscroll-tips error" onClick={retry}>
+          出错了，点击重试
+        </View>
+      );
+    }
+    return <View className={`ppscroll-tips ${loading ? ' loading' : ''}`}>Loading</View>;
+  }
+  return <View className="ppscroll-tips">没有更多</View>;
 };
 
 class Component<T> extends PureComponent<Props<T>, State<T>> {
@@ -328,7 +348,15 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
       clearTimeout(this.state.loadingState);
     }
     const loadingState = setTimeout(() => {
-      this.setState({loadingState: 0, errorCode: 'timeout'});
+      this.setState({
+        loadingState: 0,
+        errorCode: 'timeout',
+        sid: Date.now(),
+        lockState: null,
+        actionState: '',
+        scrollState: '',
+        showTools: false,
+      });
     }, this.props.timeout || 5000);
     this.setState({loadingState, errorCode: ''});
     this.props.onTurning(page, sid);
@@ -342,6 +370,14 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     } else {
       this.onTurning(page, Date.now());
     }
+  };
+
+  onRetryToPrev = () => {
+    this.setState({errorCode: ''}, this.onScrollToUpper);
+  };
+
+  onRetryToNext = () => {
+    this.setState({errorCode: ''}, this.onScrollToLower);
   };
 
   defaultTools = (curPage: [number, number] | number, totalPages: number, show: boolean, loading: boolean, onTurning: (page?: number) => void) => {
@@ -377,7 +413,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     if (actionState === '') {
       this.prevPageNum = page;
     }
-    this.switchTools(!!scrollState || !loadingState);
+    this.switchTools(!!scrollState || !!loadingState);
     return (
       <>
         {tools(this.prevPageNum, totalPages, showTools, !!loadingState, this.onToolsTurning)}
@@ -393,9 +429,15 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
           lowerThreshold={100}
         >
           <View className="ppscroll-content">
-            {topArea(firstPage > 1, firstPage - 1, actionState === 'prev' || actionState === 'prev-reclaiming', errorCode)}
+            {topArea(firstPage > 1, firstPage - 1, actionState === 'prev' || actionState === 'prev-reclaiming', errorCode, this.onRetryToPrev)}
             {listComponent}
-            {bottomArea(secondPage < totalPages, secondPage + 1, actionState === 'next' || actionState === 'next-reclaiming', errorCode)}
+            {bottomArea(
+              secondPage < totalPages,
+              secondPage + 1,
+              actionState === 'next' || actionState === 'next-reclaiming',
+              errorCode,
+              this.onRetryToNext
+            )}
           </View>
         </ScrollView>
       </>

@@ -15,8 +15,8 @@ interface Props<T = any> {
     onUnmount: (page: [number, number] | number, scrollTop: number) => void;
     children: (list: T[]) => ReactNode;
     tools?: (curPage: [number, number] | number, totalPages: number, show: boolean, loading: boolean, onTurning: (page?: number) => void) => ReactNode;
-    topArea?: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string) => ReactNode;
-    bottomArea?: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string) => ReactNode;
+    topArea?: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
+    bottomArea?: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
     timeout?: number;
 }
 interface State<T = any> extends Required<DataSource<T>> {
@@ -58,6 +58,8 @@ declare class Component<T> extends PureComponent<Props<T>, State<T>> {
     onScroll: (e: any) => void;
     onTurning: (page: [number, number] | number, sid: number) => void;
     onToolsTurning: (page?: number | undefined) => void;
+    onRetryToPrev: () => void;
+    onRetryToNext: () => void;
     defaultTools: (curPage: [number, number] | number, totalPages: number, show: boolean, loading: boolean, onTurning: (page?: number | undefined) => void) => JSX.Element;
     useMemo<C>(cache: {
         result?: C;

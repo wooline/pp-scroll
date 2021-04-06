@@ -348,7 +348,15 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
       clearTimeout(this.state.loadingState);
     }
     const loadingState = setTimeout(() => {
-      this.setState({loadingState: 0, errorCode: 'timeout', sid: Date.now()});
+      this.setState({
+        loadingState: 0,
+        errorCode: 'timeout',
+        sid: Date.now(),
+        lockState: null,
+        actionState: '',
+        scrollState: '',
+        showTools: false,
+      });
     }, this.props.timeout || 5000);
     this.setState({loadingState, errorCode: ''});
     this.props.onTurning(page, sid);
