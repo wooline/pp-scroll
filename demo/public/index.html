@@ -114,6 +114,21 @@
           },
           false
         );
+        function isIE() {
+          if (!!window.ActiveXObject || 'ActiveXObject' in window) {
+            return true;
+          } else {
+            return false;
+          }
+        }
+        if (isIE()) {
+          var script = document.createElement('script');
+          script.type = 'text/javaScript';
+          script.defer = true;
+          script.async = false;
+          script.src = '%PUBLIC_URL%/polyfill.js';
+          document.head.appendChild(script);
+        }
       })();
     </script>
     <title>React App</title>

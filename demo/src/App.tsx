@@ -35,28 +35,13 @@ function App() {
     );
   }, []);
 
-  const onTurning = useCallback(async (page: [number, number] | number, sid: number, cache?: DataSource) => {
+  const onTurning = useCallback(async (page: [number, number] | number, sid: number) => {
     const res = await fetchPhotosList(page);
     const {
       list,
       listSummary: {totalPages, totalItems, firstSize},
     } = res;
     setPhotoDatasource({list, page, totalPages, totalItems, firstSize, sid});
-    // if (cache) {
-    //   const {pageSize} = listSearch;
-    //   const {totalPages, totalItems} = cache;
-    //   dispatch(
-    //     Modules.photo.actions.putList({...listSearch, pageCurrent: page}, cache.list, {totalPages, totalItems, pageSize, pageCurrent: page}, sid)
-    //   );
-    // }
-    // const {
-    //   list,
-    //   listSummary: {page, totalPages, totalItems, firstSize},
-    // } = await fetchPhotosList(page);
-    // // App.router.replace(
-    // //   {pagename: '/photo/list', params: {photo: {listSearchPre: {pageCurrent: page}, listVerPre: sid}}, extendParams: 'current'},
-    // //   true
-    // // );
   }, []);
 
   return (
