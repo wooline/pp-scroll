@@ -7049,6 +7049,11 @@ media-typer@0.3.0:
   resolved "https://registry.yarnpkg.com/media-typer/-/media-typer-0.3.0.tgz#8710d7af0aa626f8fffa1ce00168545263255748"
   integrity sha1-hxDXrwqmJvj/+hzgAWhUUmMlV0g=
 
+memoize-one@^5.1.1:
+  version "5.1.1"
+  resolved "https://registry.yarnpkg.com/memoize-one/-/memoize-one-5.1.1.tgz#047b6e3199b508eaec03504de71229b8eb1d75c0"
+  integrity sha512-HKeeBpWvqiVJD57ZUAsJNm71eHTykffzcLZVYWiVfQeI1rJtuEaS7hQiEpWfVVk18donPwJEcFKIkCmPJNOhHA==
+
 memory-fs@^0.4.1:
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/memory-fs/-/memory-fs-0.4.1.tgz#3a9a20b8462523e447cfbc7e8bb80ed667bfc552"
@@ -8723,10 +8728,12 @@ postcss@^8.1.0:
     nanoid "^3.1.20"
     source-map "^0.6.1"
 
-pp-scroll@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/pp-scroll/-/pp-scroll-1.0.2.tgz#b09466aa7976d50e08372cc927cd93fbd7afeea2"
-  integrity sha512-Z8ZPGr5QCQrcqDhx8xq+1OMmv8gbccnoSQQh3jTASFQQ0iAAo/uuTIJMwcwwjUA3YwaC0P7uVAwwEU5yhMvJag==
+pp-scroll@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/pp-scroll/-/pp-scroll-1.0.3.tgz#467f8933592dc5717fd2c12b94c02841329c74d5"
+  integrity sha512-H91dV70cbiJB6jCkbcj1xADruli0R7fsmgDe3H246oTBbctTSMMQMzz7rCSWTp/heB0ETZUUbxabtaQ866KF2g==
+  dependencies:
+    memoize-one "^5.1.1"
 
 prelude-ls@^1.2.1:
   version "1.2.1"

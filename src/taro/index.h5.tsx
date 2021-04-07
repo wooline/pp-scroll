@@ -1,4 +1,5 @@
 import React, {ReactNode, RefObject, PureComponent} from 'react';
+import memoizeOne from 'memoize-one';
 import {View, ScrollView} from '@tarojs/components';
 import Tools from './Tools';
 
@@ -17,7 +18,7 @@ interface Props<T = any> {
   datasource: DataSource<T>;
   onTurning: (page: [number, number] | number, sid: number) => void;
   onScroll?: (scrollTop: number, scrollState: '' | 'up' | 'down') => void;
-  onUnmount?: (page: [number, number] | number, scrollTop: number) => void;
+  onCollect?: (datasource: DataSource<T>) => void;
   children: (list: T[]) => ReactNode;
   tools?: (
     curPage: [number, number] | number,
@@ -30,6 +31,7 @@ interface Props<T = any> {
   topArea?: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
   bottomArea?: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
   timeout?: number;
+  collectId?: string;
 }
 interface State<T = any> extends Required<DataSource<T>> {
   datasource: DataSource<T> | null;
@@ -210,9 +212,50 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
 
   listData: T[] = [];
 
-  listComponentCache: MemoCache = {};
-
   prevPageNum: [number, number] | number = 0;
+
+  memoList = memoizeOne((render: (list: any) => ReactNode, list: any[]) => render(list || []));
+
+  memoTools = memoizeOne(
+    (
+      render: (
+        curPage: [number, number] | number,
+        totalPages: number,
+        totalItems: number,
+        show: boolean,
+        loading: boolean,
+        onTurning: (page?: number) => void
+      ) => ReactNode,
+      curPage: [number, number] | number,
+      totalPages: number,
+      totalItems: number,
+      show: boolean,
+      loading: boolean,
+      onTurning: (page?: number) => void
+    ) => render(curPage, totalPages, totalItems, show, loading, onTurning)
+  );
+
+  memoTopArea = memoizeOne(
+    (
+      render: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode,
+      morePage: boolean,
+      prevPage: number,
+      loading: boolean,
+      errorCode: string,
+      retry: () => void
+    ) => render(morePage, prevPage, loading, errorCode, retry)
+  );
+
+  memoBottomArea = memoizeOne(
+    (
+      render: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode,
+      morePage: boolean,
+      nextPage: number,
+      loading: boolean,
+      errorCode: string,
+      retry: () => void
+    ) => render(morePage, nextPage, loading, errorCode, retry)
+  );
 
   constructor(props: any) {
     super(props);
@@ -260,7 +303,8 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
   }
 
   componentWillUnmount() {
-    this.props.onUnmount && this.props.onUnmount(this.state.page, this.curScrollTop);
+    const {page, list, firstSize, sid, errorCode, totalPages, totalItems} = this.state;
+    this.props.onCollect && this.props.onCollect({scrollTop: this.curScrollTop, page, list, totalPages, totalItems, firstSize, sid, errorCode});
   }
 
   onScrollToLower = () => {
@@ -408,14 +452,6 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     return <Tools curPage={curPage} totalPages={totalPages} show={show} onTurning={onTurning} loading={loading} className={this.props.className} />;
   };
 
-  useMemo<C>(cache: {result?: C; depes?: any[]}, callback: () => C, depes: any[] = []) {
-    if (!cache.result || depes.some((val, index) => val !== cache.depes![index])) {
-      cache.result = callback();
-    }
-    cache.depes = depes;
-    return cache.result;
-  }
-
   switchTools(showTools: boolean) {
     if (this.toolsTimer) {
       clearTimeout(this.toolsTimer);
@@ -433,14 +469,31 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     const {className = '', children, tools = this.defaultTools, topArea = defaultTopArea, bottomArea = defaultBottomArea} = this.props;
     const {page, list, scrollTop, actionState, scrollState, totalPages, totalItems, loadingState, errorCode, showTools} = this.state;
     const [firstPage, secondPage] = typeof page === 'object' ? page : [page, page];
-    const listComponent = this.useMemo(this.listComponentCache, () => children(list || []), [list]);
     if (actionState === '') {
       this.prevPageNum = page;
     }
     this.switchTools(!!scrollState || !!loadingState);
+    const listComponent = this.memoList(children, list);
+    const toolsComponent = this.memoTools(tools, this.prevPageNum, totalPages, totalItems, showTools, !!loadingState, this.onToolsTurning);
+    const topAreaComponent = this.memoTopArea(
+      topArea,
+      firstPage > 1,
+      firstPage - 1,
+      actionState === 'prev' || actionState === 'prev-reclaiming',
+      errorCode,
+      this.onRetryToPrev
+    );
+    const bottomAreaComponent = this.memoBottomArea(
+      bottomArea,
+      secondPage < totalPages,
+      secondPage + 1,
+      actionState === 'next' || actionState === 'next-reclaiming',
+      errorCode,
+      this.onRetryToNext
+    );
     return (
       <>
-        {tools(this.prevPageNum, totalPages, totalItems, showTools, !!loadingState, this.onToolsTurning)}
+        {toolsComponent}
         <ScrollView
           ref={this.listRef}
           className={`ppscroll ${className} ${loadingState ? 'loading' : ''}`}
@@ -453,15 +506,9 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
           lowerThreshold={100}
         >
           <View className="ppscroll-content">
-            {topArea(firstPage > 1, firstPage - 1, actionState === 'prev' || actionState === 'prev-reclaiming', errorCode, this.onRetryToPrev)}
+            {topAreaComponent}
             {listComponent}
-            {bottomArea(
-              secondPage < totalPages,
-              secondPage + 1,
-              actionState === 'next' || actionState === 'next-reclaiming',
-              errorCode,
-              this.onRetryToNext
-            )}
+            {bottomAreaComponent}
           </View>
         </ScrollView>
       </>
