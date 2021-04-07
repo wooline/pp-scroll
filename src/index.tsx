@@ -17,6 +17,7 @@ interface Props<T = any> {
   datasource: DataSource<T>;
   onScroll?: (scrollTop: number, scrollState: '' | 'up' | 'down') => void;
   onTurning: (page: [number, number] | number, sid: number) => void;
+  onUnmount?: (page: [number, number] | number, scrollTop: number) => void;
   children: (list: T[]) => ReactNode;
   tools?: (
     curPage: [number, number] | number,
@@ -250,6 +251,10 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
         setTimeout(() => this.setState({actionState: ''}), 0);
       }
     }
+  }
+
+  componentWillUnmount() {
+    this.props.onUnmount && this.props.onUnmount(this.state.page, this.curScrollTop);
   }
 
   onScrollToLower = () => {

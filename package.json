@@ -1,6 +1,6 @@
 {
   "name": "pp-scroll",
-  "version": "0.0.5",
+  "version": "1.0.0",
   "description": "",
   "scripts": {
     "typeCheck": "tsc -P ./src",

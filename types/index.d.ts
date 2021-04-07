@@ -14,6 +14,7 @@ interface Props<T = any> {
     datasource: DataSource<T>;
     onScroll?: (scrollTop: number, scrollState: '' | 'up' | 'down') => void;
     onTurning: (page: [number, number] | number, sid: number) => void;
+    onUnmount?: (page: [number, number] | number, scrollTop: number) => void;
     children: (list: T[]) => ReactNode;
     tools?: (curPage: [number, number] | number, totalPages: number, totalItems: number, show: boolean, loading: boolean, onTurning: (page?: number) => void) => ReactNode;
     topArea?: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
@@ -52,6 +53,7 @@ declare class Component<T> extends PureComponent<Props<T>, State<T>> {
     constructor(props: any);
     getSnapshotBeforeUpdate(prevProps: Props, prevState: State): any[] | null;
     componentDidUpdate(prevProps: Props, prevState: State, snapshot: [number, number]): void;
+    componentWillUnmount(): void;
     onScrollToLower: () => void;
     onScrollToUpper: () => void;
     checkScroll: () => void;
