@@ -75,6 +75,7 @@ const defaultBottomArea = (morePage: boolean, nextPage: number, loading: boolean
   return <div className="ppscroll-tips">没有更多</div>;
 };
 
+const isIE = !!window['ActiveXObject'] || 'ActiveXObject' in window;
 class Component<T> extends PureComponent<Props<T>, State<T>> {
   static getDerivedStateFromProps(nextProps: Props, prevState: State): Partial<State> | null {
     const newState: Partial<State> = {};
@@ -222,6 +223,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     const curActionState = this.state.actionState;
     const prevActionState = prevState.actionState;
     if (
+      (curActionState === 'next' && prevActionState === '' && isIE) ||
       (curActionState === 'next-reclaiming' && prevActionState === 'next') ||
       (curActionState === 'prev-reclaiming' && prevActionState === 'prev')
     ) {
@@ -237,6 +239,10 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     const list = this.listRef.current;
     if (reclaiming) {
       this.reclaiming = undefined;
+      if (this.state.actionState === 'next' && snapshot) {
+        const [prevScrollTop, prevScrollHeight] = snapshot;
+        list.scrollTop = prevScrollTop - (prevScrollHeight - list.scrollHeight);
+      }
       reclaiming();
     } else {
       const curActionState = this.state.actionState;

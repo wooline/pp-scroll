@@ -8723,10 +8723,10 @@ postcss@^8.1.0:
     nanoid "^3.1.20"
     source-map "^0.6.1"
 
-pp-scroll@^0.0.5:
-  version "0.0.5"
-  resolved "https://registry.yarnpkg.com/pp-scroll/-/pp-scroll-0.0.5.tgz#dc0205204dc7d6039e312a37f962f6ba02651da2"
-  integrity sha512-8Lt0g8XcLvY359HwVEBkOdqh6uQ2cK4wLBiCARoo2Y6K15fKWlBe/ghU2yAMolbWEFHezhC7a6Vja9aXMX0YEw==
+pp-scroll@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/pp-scroll/-/pp-scroll-1.0.2.tgz#b09466aa7976d50e08372cc927cd93fbd7afeea2"
+  integrity sha512-Z8ZPGr5QCQrcqDhx8xq+1OMmv8gbccnoSQQh3jTASFQQ0iAAo/uuTIJMwcwwjUA3YwaC0P7uVAwwEU5yhMvJag==
 
 prelude-ls@^1.2.1:
   version "1.2.1"
