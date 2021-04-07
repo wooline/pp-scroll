@@ -1,40 +1,32 @@
 import React, {useState, useCallback, useEffect} from 'react';
-import PPScroll, {DataSource} from '../../';
+import PPScroll, {DataSource} from 'pp-scroll';
 import {ListItem, fetchPhotosList} from './api';
 import logo from './logo.svg';
 import './App.css';
+import 'pp-scroll/css/index.css';
 
 function App() {
   const [photoDatasource, setPhotoDatasource] = useState<DataSource | null>(null);
 
   useEffect(() => {
-    const {
-      list,
-      listSummary: {page, totalPages, firstSize},
-    } = fetchPhotosList(1);
-    setPhotoDatasource({list, page, totalPages, firstSize, sid: Date.now()});
+    fetchPhotosList(1).then((res) => {
+      const {
+        list,
+        listSummary: {page, totalPages, totalItems, firstSize},
+      } = res;
+      setPhotoDatasource({list, page, totalPages, totalItems, firstSize, sid: Date.now()});
+    });
   }, []);
 
   const children = useCallback((realList: ListItem[]) => {
     return (
-      <div className="g-pic-list">
+      <div className="pic-list">
         {realList.map((item) => (
           <div key={item.id} className="list-item">
             <div className="list-pic" style={{backgroundImage: `url(${item.coverUrl})`}}>
               <div className="list-title">
                 {item.id}
                 {item.title}
-              </div>
-              <div className="listImg" />
-              <div className="props">
-                <div className="at-icon at-icon-map-pin" /> {item.departure}
-                <div className="at-icon at-icon-star" style={{marginLeft: '5px'}} /> {item.type}
-              </div>
-              <div className="desc">
-                <div className="price">
-                  <span className="unit">￥</span>
-                  <span className="num">{item.price}</span>
-                </div>
               </div>
             </div>
           </div>
@@ -43,11 +35,28 @@ function App() {
     );
   }, []);
 
-  const onTurning = useCallback((page: [number, number] | number, sid: number) => {
-    // App.router.replace(
-    //   {pagename: '/photo/list', params: {photo: {listSearchPre: {pageCurrent: page}, listVerPre: sid}}, extendParams: 'current'},
-    //   true
-    // );
+  const onTurning = useCallback(async (page: [number, number] | number, sid: number, cache?: DataSource) => {
+    const res = await fetchPhotosList(page);
+    const {
+      list,
+      listSummary: {totalPages, totalItems, firstSize},
+    } = res;
+    setPhotoDatasource({list, page, totalPages, totalItems, firstSize, sid});
+    // if (cache) {
+    //   const {pageSize} = listSearch;
+    //   const {totalPages, totalItems} = cache;
+    //   dispatch(
+    //     Modules.photo.actions.putList({...listSearch, pageCurrent: page}, cache.list, {totalPages, totalItems, pageSize, pageCurrent: page}, sid)
+    //   );
+    // }
+    // const {
+    //   list,
+    //   listSummary: {page, totalPages, totalItems, firstSize},
+    // } = await fetchPhotosList(page);
+    // // App.router.replace(
+    // //   {pagename: '/photo/list', params: {photo: {listSearchPre: {pageCurrent: page}, listVerPre: sid}}, extendParams: 'current'},
+    // //   true
+    // // );
   }, []);
 
   return (
@@ -57,7 +66,7 @@ function App() {
       </header>
       <div className="app-body">
         {photoDatasource && (
-          <PPScroll className="aaaa" datasource={photoDatasource} onTurning={onTurning}>
+          <PPScroll datasource={photoDatasource} onTurning={onTurning}>
             {children}
           </PPScroll>
         )}

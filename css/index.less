@@ -1,3 +1,4 @@
+@import './var.less';
 @font-face {
   font-family: 'ppscroll-icon';
   src: url('iconfont.woff?t=1617000365938') format('woff');
@@ -5,7 +6,7 @@
 
 .ppscroll-icon {
   font-family: 'ppscroll-icon' !important;
-  font-size: 16px;
+  font-size: (16px * @deviceratio);
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -50,7 +51,7 @@
   position: relative;
 }
 .ppscroll-tips {
-  font-size: 24px;
+  font-size: (12px * @deviceratio);
   text-align: center;
   color: #999;
   line-height: 2;
@@ -60,11 +61,11 @@
   display: inline-block;
   overflow: hidden;
   vertical-align: middle;
-  width: 20px;
-  height: 20px;
+  width: (10px * @deviceratio);
+  height: (10px * @deviceratio);
   background: url(data:image/gif;base64,R0lGODlhGAAYAKIAAP///8z/zAAAAOjo6AAzAACZMwAAAAAAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQJCgAAACwAAAAAGAAYAAADQgi63P4wykmrvTjrzbufQyiKjmCe56iWKPpFQcAQxBXLRQHQNXUrOQVv8gPqhDRYjBFcDB9L5tHZqzQ5101Ws3UkAAAh+QQJCgAAACwAAAAAGAAYAAADRQi63P4wykmrjUJcl/Ve3QdmohKWAImuDeG+7wXPrDQMTFFcNx4EAN2O0lP8FMJJ0QhE6iJLZu75uDWO0wsWtS11RV9HAgAh+QQJCgAAACwAAAAAGAAYAAADRwi6DCItSvambfXqrC1XBNEtXyiODgSGqJKZrQvBMcPWuFbsPN/2wFwuEMgNBgBisXZUKJlIJzHWXDxRVetylDVGhV1cOJIAACH5BAkKAAAALAAAAAAYABgAAANICLoMRC1K9qZt9eqslRAYxBTF9IELB5Cl+aXiSmqnkrEdUFd4rqOKmW9IBASOSOQwySw6F4PBExqdKqJSK9YK2Gqz3LB4zEgAACH5BAkKAAAALAAAAAAYABgAAANDCLoMVS1K9qZt9eqsFSEYxATB9IELB5Cl+aXiSmqnkrEdUFd4rqOKmW+oEBiPx8hgyWQin8pmk0itWq/YrHbL7XojCQAh+QQJCgAAACwAAAAAGAAYAAADRwi6DBEtSvambfXqrFUpGMQMw/SBCweQpfml4kpqp5KxHVBXeK6jiplvqCAYj8chckls+gQC5wIalVKlgKsVis1Wu+CwGJwAACH5BAkKAAAALAAAAAAYABgAAANICLoMMy1K9qZt9eqsVQgY1HkfJY7AByocqrInmpatXMp4VOw8L/fAnLBDIAwVRaNAkEsqljjnk4mSTmXFBvQI2B69Q7BQHEkAACH5BAUKAAAALAAAAAAYABgAAANECLrc/jDKSWscw0KctePeh4UNSC7jSQZs22purM5OUTCCoNk3QQA5HYWn8CmCE2Lxd8xFlEuc82FrGKWaq0p74pK8jgQAOw==);
   background-size: 100% 100%;
-  margin-left: 8px;
+  margin-left: (4px * @deviceratio);
   visibility: hidden;
 }
 .ppscroll-tips.loading::after {
@@ -88,10 +89,10 @@
 .ppscroll-tools {
   position: absolute;
   z-index: 1;
-  width: 100px;
-  height: 100px;
-  right: 60px;
-  bottom: 120px;
+  width: (50px * @deviceratio);
+  height: (50px * @deviceratio);
+  right: (30px * @deviceratio);
+  bottom: (60px * @deviceratio);
   opacity: 0;
   transition: opacity 1s;
   &.hide {
@@ -125,47 +126,47 @@
   }
   .trigger {
     position: absolute;
-    width: 100px;
-    height: 100px;
-    line-height: 100px;
+    width: (50px * @deviceratio);
+    height: (50px * @deviceratio);
+    line-height: (50px * @deviceratio);
     background-color: #fff;
-    border-radius: 100px;
+    border-radius: (50px * @deviceratio);
     text-align: center;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
-    font-size: 55px;
+    box-shadow: 0 0 (5px * @deviceratio) rgba(0, 0, 0, 0.8);
+    font-size: (28px * @deviceratio);
     color: #333;
   }
   .wrap {
-    width: 420px;
-    height: 100px;
-    right: 50px;
+    width: (210px * @deviceratio);
+    height: (50px * @deviceratio);
+    right: (25px * @deviceratio);
     bottom: 0;
     position: absolute;
     overflow: hidden;
     transition: width ease-in 0.2s;
   }
   .panel {
-    width: 420px;
-    height: 80px;
-    line-height: 80px;
-    margin-top: 12px;
-    padding-left: 8px;
+    width: (210px * @deviceratio);
+    height: (40px * @deviceratio);
+    line-height: (40px * @deviceratio);
+    margin-top: (6px * @deviceratio);
+    padding-left: (4px * @deviceratio);
     text-align: center;
     display: flex;
     justify-content: center;
     color: #555;
     align-items: center;
     background-color: #eee;
-    border-radius: 100px 0 0 100px;
-    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
+    border-radius: (50px * @deviceratio) 0 0 (50px * @deviceratio);
+    box-shadow: (1px * @deviceratio) (1px * @deviceratio) (5px * @deviceratio) rgba(0, 0, 0, 0.5);
   }
   .refresh {
-    width: 70px;
-    height: 70px;
-    border-radius: 100px;
-    border: 5px #fff solid;
-    font-size: 55px;
-    line-height: 70px;
+    width: (35px * @deviceratio);
+    height: (35px * @deviceratio);
+    border-radius: (50px * @deviceratio);
+    border: (3px * @deviceratio) #fff solid;
+    font-size: (28px * @deviceratio);
+    line-height: (35px * @deviceratio);
     text-align: center;
     background-color: #09f;
     color: #fff;
@@ -173,17 +174,17 @@
     left: 0;
   }
   .pagination {
-    width: 80px;
-    font-size: 40px;
+    width: (40px * @deviceratio);
+    font-size: (20px * @deviceratio);
     line-height: inherit;
     display: block;
     font-weight: 500;
   }
   .goto {
-    font-size: 26px;
+    font-size: (13px * @deviceratio);
     background-color: #fff;
-    padding: 0 20px;
-    min-width: 80px;
+    padding: 0 (10px * @deviceratio);
+    min-width: (40px * @deviceratio);
     position: relative;
   }
   .cur {

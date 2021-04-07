@@ -4,6 +4,7 @@ export interface DataSource<T = any> {
     list: T[];
     page: [number, number] | number;
     totalPages: number;
+    totalItems: number;
     scrollTop?: number;
     firstSize?: number;
     errorCode?: string;
@@ -14,7 +15,7 @@ interface Props<T = any> {
     onScroll?: (scrollTop: number, scrollState: '' | 'up' | 'down') => void;
     onTurning: (page: [number, number] | number, sid: number) => void;
     children: (list: T[]) => ReactNode;
-    tools?: (curPage: [number, number] | number, totalPages: number, show: boolean, loading: boolean, onTurning: (page?: number) => void) => ReactNode;
+    tools?: (curPage: [number, number] | number, totalPages: number, totalItems: number, show: boolean, loading: boolean, onTurning: (page?: number) => void) => ReactNode;
     topArea?: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
     bottomArea?: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
     timeout?: number;
@@ -59,7 +60,7 @@ declare class Component<T> extends PureComponent<Props<T>, State<T>> {
     onToolsTurning: (page?: number | undefined) => void;
     onRetryToPrev: () => void;
     onRetryToNext: () => void;
-    defaultTools: (curPage: [number, number] | number, totalPages: number, show: boolean, loading: boolean, onTurning: (page?: number | undefined) => void) => JSX.Element;
+    defaultTools: (curPage: [number, number] | number, totalPages: number, totalItems: number, show: boolean, loading: boolean, onTurning: (page?: number | undefined) => void) => JSX.Element;
     useMemo<C>(cache: {
         result?: C;
         depes?: any[];

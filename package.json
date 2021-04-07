@@ -1,12 +1,12 @@
 {
   "name": "pp-scroll",
-  "version": "0.0.2",
+  "version": "0.0.5",
   "description": "",
   "scripts": {
     "typeCheck": "tsc -P ./src",
     "eslintCheck": "eslint --cache ./src",
     "buildTypes": "tsc --project ./src/tsconfig.types.json",
-    "buildLess": "lessc ./css/taro.less ./css/taro.css",
+    "buildLess": "lessc ./css/index.less ./css/taro.css & lessc ./css/index.less ./css/index.css --modify-var=\"deviceratio=1\"",
     "prebuild": "rimraf ./dist ./types && yarn buildTypes",
     "build:cjs": "cross-env NODE_TAG=cjs babel ./src --out-dir ./dist/cjs  --extensions \".ts,.tsx\"",
     "build": "yarn build:cjs"

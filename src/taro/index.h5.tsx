@@ -7,6 +7,7 @@ export interface DataSource<T = any> {
   list: T[];
   page: [number, number] | number;
   totalPages: number;
+  totalItems: number;
   scrollTop?: number;
   firstSize?: number;
   errorCode?: string;
@@ -17,7 +18,14 @@ interface Props<T = any> {
   onTurning: (page: [number, number] | number, sid: number) => void;
   onScroll?: (scrollTop: number, scrollState: '' | 'up' | 'down') => void;
   children: (list: T[]) => ReactNode;
-  tools?: (curPage: [number, number] | number, totalPages: number, show: boolean, loading: boolean, onTurning: (page?: number) => void) => ReactNode;
+  tools?: (
+    curPage: [number, number] | number,
+    totalPages: number,
+    totalItems: number,
+    show: boolean,
+    loading: boolean,
+    onTurning: (page?: number) => void
+  ) => ReactNode;
   topArea?: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
   bottomArea?: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
   timeout?: number;
@@ -181,6 +189,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     list: [],
     page: 0,
     totalPages: 0,
+    totalItems: 0,
     scrollTop: 0,
     firstSize: 0,
   };
@@ -377,7 +386,14 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     this.setState({errorCode: ''}, this.onScrollToLower);
   };
 
-  defaultTools = (curPage: [number, number] | number, totalPages: number, show: boolean, loading: boolean, onTurning: (page?: number) => void) => {
+  defaultTools = (
+    curPage: [number, number] | number,
+    totalPages: number,
+    totalItems: number,
+    show: boolean,
+    loading: boolean,
+    onTurning: (page?: number) => void
+  ) => {
     return <Tools curPage={curPage} totalPages={totalPages} show={show} onTurning={onTurning} loading={loading} className={this.props.className} />;
   };
 
@@ -404,7 +420,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
 
   render() {
     const {className = '', children, tools = this.defaultTools, topArea = defaultTopArea, bottomArea = defaultBottomArea} = this.props;
-    const {page, list, scrollTop, actionState, scrollState, totalPages, loadingState, errorCode, showTools} = this.state;
+    const {page, list, scrollTop, actionState, scrollState, totalPages, totalItems, loadingState, errorCode, showTools} = this.state;
     const [firstPage, secondPage] = typeof page === 'object' ? page : [page, page];
     const listComponent = this.useMemo(this.listComponentCache, () => children(list || []), [list]);
     if (actionState === '') {
@@ -413,7 +429,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     this.switchTools(!!scrollState || !!loadingState);
     return (
       <>
-        {tools(this.prevPageNum, totalPages, showTools, !!loadingState, this.onToolsTurning)}
+        {tools(this.prevPageNum, totalPages, totalItems, showTools, !!loadingState, this.onToolsTurning)}
         <ScrollView
           ref={this.listRef}
           className={`ppscroll ${className} ${loadingState ? 'loading' : ''}`}

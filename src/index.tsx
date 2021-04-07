@@ -1,12 +1,13 @@
 import React, {ReactNode, RefObject, PureComponent} from 'react';
-import {View, ScrollView} from '@tarojs/components';
 import Tools from './Tools';
+import ScrollView from './ScrollView';
 
 export interface DataSource<T = any> {
   sid: number;
   list: T[];
   page: [number, number] | number;
   totalPages: number;
+  totalItems: number;
   scrollTop?: number;
   firstSize?: number;
   errorCode?: string;
@@ -17,7 +18,14 @@ interface Props<T = any> {
   onScroll?: (scrollTop: number, scrollState: '' | 'up' | 'down') => void;
   onTurning: (page: [number, number] | number, sid: number) => void;
   children: (list: T[]) => ReactNode;
-  tools?: (curPage: [number, number] | number, totalPages: number, show: boolean, loading: boolean, onTurning: (page?: number) => void) => ReactNode;
+  tools?: (
+    curPage: [number, number] | number,
+    totalPages: number,
+    totalItems: number,
+    show: boolean,
+    loading: boolean,
+    onTurning: (page?: number) => void
+  ) => ReactNode;
   topArea?: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
   bottomArea?: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
   timeout?: number;
@@ -42,12 +50,12 @@ const defaultTopArea = (morePage: boolean, prevPage: number, loading: boolean, e
   if (morePage) {
     if (errorCode) {
       return (
-        <View className="ppscroll-tips error" onClick={retry}>
+        <div className="ppscroll-tips error" onClick={retry}>
           出错了，点击重试
-        </View>
+        </div>
       );
     }
-    return <View className={`ppscroll-tips ${loading ? ' loading' : ''}`}>Loading</View>;
+    return <div className={`ppscroll-tips ${loading ? ' loading' : ''}`}>Loading</div>;
   }
   return null;
 };
@@ -56,14 +64,14 @@ const defaultBottomArea = (morePage: boolean, nextPage: number, loading: boolean
   if (morePage) {
     if (errorCode) {
       return (
-        <View className="ppscroll-tips error" onClick={retry}>
+        <div className="ppscroll-tips error" onClick={retry}>
           出错了，点击重试
-        </View>
+        </div>
       );
     }
-    return <View className={`ppscroll-tips ${loading ? ' loading' : ''}`}>Loading</View>;
+    return <div className={`ppscroll-tips ${loading ? ' loading' : ''}`}>Loading</div>;
   }
-  return <View className="ppscroll-tips">没有更多</View>;
+  return <div className="ppscroll-tips">没有更多</div>;
 };
 
 class Component<T> extends PureComponent<Props<T>, State<T>> {
@@ -181,6 +189,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     list: [],
     page: 0,
     totalPages: 0,
+    totalItems: 0,
     scrollTop: 0,
     firstSize: 0,
   };
@@ -377,7 +386,14 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     this.setState({errorCode: ''}, this.onScrollToLower);
   };
 
-  defaultTools = (curPage: [number, number] | number, totalPages: number, show: boolean, loading: boolean, onTurning: (page?: number) => void) => {
+  defaultTools = (
+    curPage: [number, number] | number,
+    totalPages: number,
+    totalItems: number,
+    show: boolean,
+    loading: boolean,
+    onTurning: (page?: number) => void
+  ) => {
     return <Tools curPage={curPage} totalPages={totalPages} show={show} onTurning={onTurning} loading={loading} className={this.props.className} />;
   };
 
@@ -404,7 +420,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
 
   render() {
     const {className = '', children, tools = this.defaultTools, topArea = defaultTopArea, bottomArea = defaultBottomArea} = this.props;
-    const {page, list, scrollTop, actionState, scrollState, totalPages, loadingState, errorCode, showTools} = this.state;
+    const {page, list, scrollTop, actionState, scrollState, totalPages, totalItems, loadingState, errorCode, showTools} = this.state;
     const [firstPage, secondPage] = typeof page === 'object' ? page : [page, page];
     const listComponent = this.useMemo(this.listComponentCache, () => children(list || []), [list]);
     if (actionState === '') {
@@ -413,11 +429,10 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     this.switchTools(!!scrollState || !!loadingState);
     return (
       <>
-        {tools(this.prevPageNum, totalPages, showTools, !!loadingState, this.onToolsTurning)}
+        {tools(this.prevPageNum, totalPages, totalItems, showTools, !!loadingState, this.onToolsTurning)}
         <ScrollView
-          ref={this.listRef}
+          forwardedRef={this.listRef}
           className={`ppscroll ${className} ${loadingState ? 'loading' : ''}`}
-          scrollY
           scrollTop={scrollTop}
           onScroll={this.onScroll}
           onScrollToLower={this.onScrollToLower}
@@ -425,7 +440,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
           upperThreshold={100}
           lowerThreshold={100}
         >
-          <View className="ppscroll-content">
+          <div className="ppscroll-content">
             {topArea(firstPage > 1, firstPage - 1, actionState === 'prev' || actionState === 'prev-reclaiming', errorCode, this.onRetryToPrev)}
             {listComponent}
             {bottomArea(
@@ -435,7 +450,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
               errorCode,
               this.onRetryToNext
             )}
-          </View>
+          </div>
         </ScrollView>
       </>
     );

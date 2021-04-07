@@ -48,13 +48,13 @@ const datasource = (function createPhotoList() {
     })
     .list.forEach((item: any) => {
       item.id = `${item.id}`;
-      item.coverUrl = `/client/imgs/${item.id % 17}.jpg`;
+      item.coverUrl = `/imgs/${item.id % 17}.jpg`;
       listData[item.id] = item;
     });
   return listData;
 })();
 
-function getPhotosList(page: number, pageSize: number = 15) {
+async function getPhotosList(page: number, pageSize: number = 15) {
   const start = (page - 1) * pageSize;
   const end = start + pageSize;
   const listData = Object.keys(datasource).map((id) => {
@@ -70,15 +70,15 @@ function getPhotosList(page: number, pageSize: number = 15) {
     },
     list: listData.slice(start, end),
   };
+  console.log('ajax request page ' + page);
   return result;
 }
 
-export function fetchPhotosList(page: number | [number, number]): {list: ListItem[]; listSummary: DualListSummary} {
+export async function fetchPhotosList(page: number | [number, number]): Promise<{list: ListItem[]; listSummary: DualListSummary}> {
   if (typeof page === 'number') {
     return getPhotosList(page);
   } else {
-    const page1 = getPhotosList(page[0]);
-    const page2 = getPhotosList(page[1]);
+    const [page1, page2] = await Promise.all([getPhotosList(page[0]), getPhotosList(page[1])]);
     const {pageSize, totalItems, totalPages} = page1.listSummary;
     return {list: [...page1.list, ...page2.list], listSummary: {page, pageSize, totalItems, totalPages, firstSize: page1.list.length}};
   }
