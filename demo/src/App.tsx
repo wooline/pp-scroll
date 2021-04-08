@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useEffect} from 'react';
+import React, {useState, useCallback, useEffect, useRef} from 'react';
 import PPScroll, {DataSource} from 'pp-scroll';
 import {ListItem, fetchPhotosList} from './api';
 import logo from './logo.svg';
@@ -9,12 +9,15 @@ function App() {
   const [photoDatasource, setPhotoDatasource] = useState<DataSource | null>(null);
 
   useEffect(() => {
-    fetchPhotosList(1).then((res) => {
+    const [pageStr = '1', scrollTopStr = '0'] = window.location.hash.replace('#', '').split('|');
+    const pageArr = pageStr.split(',').map((str) => parseInt(str) || 1);
+    const page: number | [number, number] = pageArr.length === 1 ? pageArr[0] : [pageArr[0], pageArr[1]];
+    fetchPhotosList(page).then((res) => {
       const {
         list,
         listSummary: {page, totalPages, totalItems, firstSize},
       } = res;
-      setPhotoDatasource({list, page, totalPages, totalItems, firstSize, sid: Date.now()});
+      setPhotoDatasource({list, page, totalPages, totalItems, firstSize, sid: Date.now(), scrollTop: parseInt(scrollTopStr)});
     });
   }, []);
 
@@ -44,6 +47,21 @@ function App() {
     setPhotoDatasource({list, page, totalPages, totalItems, firstSize, sid});
   }, []);
 
+  const locationTimer = useRef<{timer: any; data?: DataSource}>({timer: 0});
+
+  const onDatasourceChange = useCallback((datasource: DataSource) => {
+    console.log(datasource);
+    const obj = locationTimer.current;
+    obj.data = datasource;
+    if (!obj.timer) {
+      obj.timer = setTimeout(() => {
+        obj.timer = 0;
+        // eslint-disable-next-line no-restricted-globals
+        history.replaceState(null, '', `#${obj.data?.page}|${obj.data?.scrollTop}`);
+      }, 1000);
+    }
+  }, []);
+
   return (
     <>
       <header className="app-header">
@@ -51,7 +69,7 @@ function App() {
       </header>
       <div className="app-body">
         {photoDatasource && (
-          <PPScroll datasource={photoDatasource} onTurning={onTurning}>
+          <PPScroll datasource={photoDatasource} onTurning={onTurning} onDatasourceChange={onDatasourceChange}>
             {children}
           </PPScroll>
         )}

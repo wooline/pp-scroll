@@ -20,6 +20,7 @@ declare class Component<T> extends PureComponent<Props, State> {
     state: State;
     scrollToUpperTimer: number;
     scrollToLowerTimer: number;
+    componentDidMount(): void;
     componentDidUpdate(prevProps: Props, prevState: State, snapshot: [number, number]): void;
     emitScrollToLower: () => void;
     emitScrollToUpper: () => void;

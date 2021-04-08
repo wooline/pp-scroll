@@ -19,6 +19,11 @@ class Component<T> extends PureComponent<Props, State> {
 
   scrollToLowerTimer: number = 0;
 
+  componentDidMount() {
+    const list = this.props.forwardedRef.current;
+    list.scrollTop = this.props.scrollTop;
+  }
+
   componentDidUpdate(prevProps: Props, prevState: State, snapshot: [number, number]) {
     if (this.props.scrollTop !== prevProps.scrollTop) {
       const list = this.props.forwardedRef.current;
@@ -52,7 +57,6 @@ class Component<T> extends PureComponent<Props, State> {
       this.emitScrollToLower();
     }
     this.props.onScroll({detail: {scrollTop}});
-    // console.log(scrollTop, scrollHeight, scrollTop + clientHeight);
   };
 
   render() {

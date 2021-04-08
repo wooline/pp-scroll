@@ -29,7 +29,6 @@ interface State<T = any> extends Required<DataSource<T>> {
     };
     lockState: State<T> | null;
     actionState: '' | 'next' | 'prev' | 'prev-reclaiming' | 'next-reclaiming';
-    scrollState: '' | 'up' | 'down';
     loadingState: number;
     errorCode: string;
     showTools: boolean;
@@ -40,6 +39,7 @@ declare class Component<T> extends PureComponent<Props<T>, State<T>> {
     listRef: RefObject<any>;
     curScrollTop: number;
     prevScrollTop: number;
+    scrollState: '' | 'up' | 'down';
     scrollTimer: number;
     toolsTimer: number;
     reclaiming?: () => void;
@@ -49,7 +49,7 @@ declare class Component<T> extends PureComponent<Props<T>, State<T>> {
     memoTools: (render: (curPage: [number, number] | number, totalPages: number, totalItems: number, show: boolean, loading: boolean, onTurning: (page?: number | undefined) => void) => ReactNode, curPage: [number, number] | number, totalPages: number, totalItems: number, show: boolean, loading: boolean, onTurning: (page?: number | undefined) => void) => React.ReactNode;
     memoTopArea: (render: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode, morePage: boolean, prevPage: number, loading: boolean, errorCode: string, retry: () => void) => React.ReactNode;
     memoBottomArea: (render: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode, morePage: boolean, nextPage: number, loading: boolean, errorCode: string, retry: () => void) => React.ReactNode;
-    memoDatasource: (callback: (datasource: DataSource<T>) => void, sid: number, list: T[], page: [number, number] | number, totalPages: number, totalItems: number, scrollTop: number, firstSize?: number | undefined, errorCode?: string | undefined) => DataSource<T>;
+    memoDatasource: (callback: (datasource: DataSource<T>) => void, sid: number, list: T[], page: [number, number] | number, totalPages: number, totalItems: number, scrollTop: number, firstSize?: number | undefined, errorCode?: string | undefined) => void;
     memoShowTools: (switchTools: (show: boolean) => void, show: boolean) => boolean;
     constructor(props: any);
     getSnapshotBeforeUpdate(prevProps: Props, prevState: State): any[] | null;
