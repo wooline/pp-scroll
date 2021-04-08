@@ -20,7 +20,7 @@ interface Props<T = any> {
   datasource: DataSource<T>;
   onTurning: (page: [number, number] | number, sid: number) => void;
   onScroll?: (scrollTop: number, scrollState: '' | 'up' | 'down') => void;
-  onCollect?: (datasource: DataSource<T>) => void;
+  onDatasourceChange?: (datasource: DataSource<T>) => void;
   children: (list: T[]) => ReactNode;
   tools?: (
     curPage: [number, number] | number,
@@ -33,7 +33,6 @@ interface Props<T = any> {
   topArea?: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
   bottomArea?: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
   timeout?: number;
-  collectId?: string;
 }
 interface State<T = any> extends Required<DataSource<T>> {
   datasource: DataSource<T> | null;
@@ -266,9 +265,33 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     ) => render(morePage, nextPage, loading, errorCode, retry)
   );
 
+  memoDatasource = memoizeOne(
+    (
+      callback: (datasource: DataSource<T>) => void,
+      sid: number,
+      list: T[],
+      page: [number, number] | number,
+      totalPages: number,
+      totalItems: number,
+      scrollTop: number,
+      firstSize?: number,
+      errorCode?: string
+    ) => {
+      const datasource: DataSource<T> = {scrollTop, page, list, totalPages, totalItems, firstSize, sid, errorCode};
+      callback(datasource);
+      return datasource;
+    }
+  );
+
+  memoShowTools = memoizeOne((switchTools: (show: boolean) => void, show: boolean) => {
+    switchTools(show);
+    return show;
+  });
+
   componentDidUpdate(prevProps: Props, prevState: State) {
     const reclaiming = this.reclaiming;
     const iid = `#${this.iid}`;
+    const curActionState = this.state.actionState;
     if (typeof reclaiming === 'function') {
       Taro.nextTick(() => {
         Taro.createSelectorQuery()
@@ -280,7 +303,6 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
           });
       });
     } else {
-      const curActionState = this.state.actionState;
       const prevActionState = prevState.actionState;
       if (curActionState === 'next-reclaiming' && prevActionState === 'next') {
         Taro.nextTick(() => this.setState({actionState: ''}));
@@ -305,11 +327,11 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
         });
       }
     }
-  }
-
-  componentWillUnmount() {
-    const {page, list, firstSize, sid, errorCode, totalPages, totalItems} = this.state;
-    this.props.onCollect && this.props.onCollect({scrollTop: this.curScrollTop, page, list, totalPages, totalItems, firstSize, sid, errorCode});
+    this.memoShowTools(this.switchTools, !!curActionState || !!this.state.loadingState);
+    if (curActionState !== 'prev-reclaiming' && curActionState !== 'next-reclaiming' && this.props.onDatasourceChange) {
+      const {page, list, firstSize, sid, errorCode, totalPages, totalItems} = this.state;
+      this.memoDatasource(this.props.onDatasourceChange, sid, list, page, totalPages, totalItems, this.curScrollTop, firstSize, errorCode);
+    }
   }
 
   onScrollToLower = () => {
@@ -458,40 +480,27 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     return <Tools curPage={curPage} totalPages={totalPages} show={show} onTurning={onTurning} loading={loading} className={this.props.className} />;
   };
 
-  switchTools(showTools: boolean) {
+  switchTools = (showTools: boolean) => {
     if (this.toolsTimer) {
       clearTimeout(this.toolsTimer);
     }
     this.toolsTimer = setTimeout(
       () => {
-        this.setState({showTools});
+        this.state.showTools !== showTools && this.setState({showTools});
         this.toolsTimer = 0;
       },
       showTools ? 300 : 1200
     );
-  }
+  };
 
   render() {
     const {className = '', children, tools = this.defaultTools, topArea = defaultTopArea, bottomArea = defaultBottomArea} = this.props;
-    const {
-      page,
-      list,
-      scrollTop,
-      scrollState,
-      actionState,
-      forceShowPrevMore,
-      totalPages,
-      totalItems,
-      loadingState,
-      errorCode,
-      showTools,
-    } = this.state;
+    const {page, list, scrollTop, actionState, forceShowPrevMore, totalPages, totalItems, loadingState, errorCode, showTools} = this.state;
     const [firstPage, secondPage] = typeof page === 'object' ? page : [page, page];
     const iid = this.iid;
     if (actionState === '') {
       this.prevPageNum = page;
     }
-    this.switchTools(!!scrollState || !!loadingState);
     const listComponent = this.memoList(children, list);
     const toolsComponent = this.memoTools(tools, this.prevPageNum, totalPages, totalItems, showTools, !!loadingState, this.onToolsTurning);
     const topAreaComponent = this.memoTopArea(

@@ -18,7 +18,7 @@ interface Props<T = any> {
   datasource: DataSource<T>;
   onScroll?: (scrollTop: number, scrollState: '' | 'up' | 'down') => void;
   onTurning: (page: [number, number] | number, sid: number) => void;
-  onCollect?: (datasource: DataSource<T>) => void;
+  onDatasourceChange?: (datasource: DataSource<T>) => void;
   children: (list: T[]) => ReactNode;
   tools?: (
     curPage: [number, number] | number,
@@ -31,7 +31,6 @@ interface Props<T = any> {
   topArea?: (morePage: boolean, prevPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
   bottomArea?: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
   timeout?: number;
-  collectId?: string;
 }
 interface State<T = any> extends Required<DataSource<T>> {
   datasource: DataSource<T> | null;
@@ -257,6 +256,29 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     ) => render(morePage, nextPage, loading, errorCode, retry)
   );
 
+  memoDatasource = memoizeOne(
+    (
+      callback: (datasource: DataSource<T>) => void,
+      sid: number,
+      list: T[],
+      page: [number, number] | number,
+      totalPages: number,
+      totalItems: number,
+      scrollTop: number,
+      firstSize?: number,
+      errorCode?: string
+    ) => {
+      const datasource: DataSource<T> = {scrollTop, page, list, totalPages, totalItems, firstSize, sid, errorCode};
+      callback(datasource);
+      return datasource;
+    }
+  );
+
+  memoShowTools = memoizeOne((switchTools: (show: boolean) => void, show: boolean) => {
+    switchTools(show);
+    return show;
+  });
+
   constructor(props: any) {
     super(props);
     this.listRef = React.createRef();
@@ -279,32 +301,36 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
 
   componentDidUpdate(prevProps: Props, prevState: State, snapshot: [number, number]) {
     const reclaiming = this.reclaiming;
-    const list = this.listRef.current;
+    const listRef = this.listRef.current;
+    const curActionState = this.state.actionState;
     if (reclaiming) {
       this.reclaiming = undefined;
-      if (this.state.actionState === 'next' && snapshot) {
+      if (curActionState === 'next' && snapshot) {
         const [prevScrollTop, prevScrollHeight] = snapshot;
-        list.scrollTop = prevScrollTop - (prevScrollHeight - list.scrollHeight);
+        listRef.scrollTop = prevScrollTop - (prevScrollHeight - listRef.scrollHeight);
       }
       reclaiming();
     } else {
-      const curActionState = this.state.actionState;
       const prevActionState = prevState.actionState;
       if (curActionState === 'next-reclaiming' && prevActionState === 'next') {
         setTimeout(() => this.setState({actionState: ''}), 0);
       } else if (curActionState === 'prev-reclaiming' && prevActionState === 'prev') {
         // 如果慢速滚动，浏览器会根据内容变动自动重算list.scrollTop，所以不能使用list.scrollTop+；
         const [prevScrollTop, prevScrollHeight] = snapshot;
-        const scrollTop = prevScrollTop + (list.scrollHeight - prevScrollHeight);
-        list.scrollTop = scrollTop;
+        const scrollTop = prevScrollTop + (listRef.scrollHeight - prevScrollHeight);
+        listRef.scrollTop = scrollTop;
         setTimeout(() => this.setState({actionState: ''}), 0);
       }
+      if ((curActionState === '' || curActionState === 'prev' || curActionState === 'next') && this.props.onDatasourceChange) {
+        const {page, list, firstSize, sid, errorCode, totalPages, totalItems} = this.state;
+        this.memoDatasource(this.props.onDatasourceChange, sid, list, page, totalPages, totalItems, this.curScrollTop, firstSize, errorCode);
+      }
     }
-  }
-
-  componentWillUnmount() {
-    const {page, list, firstSize, sid, errorCode, totalPages, totalItems} = this.state;
-    this.props.onCollect && this.props.onCollect({scrollTop: this.curScrollTop, page, list, totalPages, totalItems, firstSize, sid, errorCode});
+    this.memoShowTools(this.switchTools, !!curActionState || !!this.state.loadingState);
+    if (curActionState !== 'prev-reclaiming' && curActionState !== 'next-reclaiming' && this.props.onDatasourceChange) {
+      const {page, list, firstSize, sid, errorCode, totalPages, totalItems} = this.state;
+      this.memoDatasource(this.props.onDatasourceChange, sid, list, page, totalPages, totalItems, this.curScrollTop, firstSize, errorCode);
+    }
   }
 
   onScrollToLower = () => {
@@ -452,27 +478,26 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     return <Tools curPage={curPage} totalPages={totalPages} show={show} onTurning={onTurning} loading={loading} className={this.props.className} />;
   };
 
-  switchTools(showTools: boolean) {
+  switchTools = (showTools: boolean) => {
     if (this.toolsTimer) {
       clearTimeout(this.toolsTimer);
     }
     this.toolsTimer = setTimeout(
       () => {
-        this.setState({showTools});
+        this.state.showTools !== showTools && this.setState({showTools});
         this.toolsTimer = 0;
       },
       showTools ? 300 : 1200
     );
-  }
+  };
 
   render() {
     const {className = '', children, tools = this.defaultTools, topArea = defaultTopArea, bottomArea = defaultBottomArea} = this.props;
-    const {page, list, scrollTop, actionState, scrollState, totalPages, totalItems, loadingState, errorCode, showTools} = this.state;
+    const {page, list, scrollTop, actionState, totalPages, totalItems, loadingState, errorCode, showTools} = this.state;
     const [firstPage, secondPage] = typeof page === 'object' ? page : [page, page];
     if (actionState === '') {
       this.prevPageNum = page;
     }
-    this.switchTools(!!scrollState || !!loadingState);
     const listComponent = this.memoList(children, list);
     const toolsComponent = this.memoTools(tools, this.prevPageNum, totalPages, totalItems, showTools, !!loadingState, this.onToolsTurning);
     const topAreaComponent = this.memoTopArea(
