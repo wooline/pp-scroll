@@ -3,7 +3,7 @@ import memoizeOne from 'memoize-one';
 import {View, ScrollView} from '@tarojs/components';
 import Tools from './Tools';
 
-export interface DataSource<T = any> {
+export interface Datasource<T = any> {
   sid: number;
   list: T[];
   page: [number, number] | number;
@@ -15,10 +15,10 @@ export interface DataSource<T = any> {
 }
 interface Props<T = any> {
   className?: string;
-  datasource: DataSource<T>;
+  datasource: Datasource<T>;
   onTurning: (page: [number, number] | number, sid: number) => void;
-  onScroll?: (scrollTop: number, scrollState: '' | 'up' | 'down') => void;
-  onDatasourceChange?: (datasource: DataSource<T>) => void;
+  onScroll?: (scrollTop: number, direction: '' | 'up' | 'down', datasource: Datasource<T>) => void;
+  onDatasourceChange?: (datasource: Datasource<T>, scrollTop: number) => void;
   children: (list: T[]) => ReactNode;
   tools?: (
     curPage: [number, number] | number,
@@ -32,10 +32,10 @@ interface Props<T = any> {
   bottomArea?: (morePage: boolean, nextPage: number, loading: boolean, errorCode: string, retry: () => void) => ReactNode;
   timeout?: number;
 }
-interface State<T = any> extends Required<DataSource<T>> {
-  datasource: DataSource<T> | null;
-  cacheDatasource: DataSource<T> | null;
-  sourceCache: {[page: number]: DataSource<T>};
+interface State<T = any> extends Required<Datasource<T>> {
+  datasource: Datasource<T> | null;
+  cacheDatasource: Datasource<T> | null;
+  sourceCache: {[page: number]: Datasource<T>};
   lockState: State<T> | null;
   actionState: '' | 'next' | 'prev' | 'prev-reclaiming' | 'next-reclaiming';
   loadingState: number;
@@ -75,7 +75,7 @@ const isIE = !!window['ActiveXObject'] || 'ActiveXObject' in window;
 class Component<T> extends PureComponent<Props<T>, State<T>> {
   static getDerivedStateFromProps(nextProps: Props, prevState: State): Partial<State> | null {
     const newState: Partial<State> = {};
-    let datasource: DataSource | null = null;
+    let datasource: Datasource | null = null;
     if (nextProps.datasource !== prevState.datasource) {
       newState.datasource = nextProps.datasource;
       datasource = nextProps.datasource;
@@ -203,6 +203,8 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
 
   prevPageNum: [number, number] | number = 0;
 
+  curDatasource?: Datasource<T>;
+
   memoList = memoizeOne((render: (list: any) => ReactNode, list: any[]) => render(list || []));
 
   memoTools = memoizeOne(
@@ -248,22 +250,20 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
 
   memoDatasource = memoizeOne(
     (
-      callback: (datasource: DataSource<T>) => void,
-      sid: number,
+      callback: (datasource: Datasource<T>) => void,
       list: T[],
       page: [number, number] | number,
       totalPages: number,
       totalItems: number,
-      scrollTop: number,
-      firstSize?: number,
-      errorCode?: string
-    ) => callback({scrollTop, page, list, totalPages, totalItems, firstSize, sid, errorCode})
+      firstSize?: number
+    ) => {
+      const datasource: Datasource<T> = {page, list, totalPages, totalItems, firstSize, sid: 0};
+      callback(datasource);
+      return datasource;
+    }
   );
 
-  memoShowTools = memoizeOne((switchTools: (show: boolean) => void, show: boolean) => {
-    switchTools(show);
-    return show;
-  });
+  memoShowTools = memoizeOne((switchTools: (show: boolean) => void, show: boolean) => switchTools(show));
 
   constructor(props: any) {
     super(props);
@@ -296,6 +296,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
         const [prevScrollTop, prevScrollHeight] = snapshot;
         listRef.scrollTop = prevScrollTop - (prevScrollHeight - listRef.scrollHeight);
       }
+      this.curScrollTop = listRef.scrollTop;
       reclaiming();
     } else if (lockState) {
       if (this.scrollState === '') {
@@ -311,13 +312,17 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
         const [prevScrollTop, prevScrollHeight] = snapshot;
         const scrollTop = prevScrollTop + (listRef.scrollHeight - prevScrollHeight);
         listRef.scrollTop = scrollTop;
+        this.curScrollTop = listRef.scrollTop;
         setTimeout(() => this.setState({actionState: ''}), 0);
       }
     }
     this.memoShowTools(this.switchTools, !!this.scrollState || !!this.state.loadingState);
-    if (curActionState !== 'prev-reclaiming' && curActionState !== 'next-reclaiming' && this.props.onDatasourceChange) {
-      const {page, list, firstSize, sid, errorCode, totalPages, totalItems} = this.state;
-      this.memoDatasource(this.props.onDatasourceChange, sid, list, page, totalPages, totalItems, this.curScrollTop, firstSize, errorCode);
+    if (curActionState !== 'prev-reclaiming' && curActionState !== 'next-reclaiming') {
+      if (this.state.scrollTop !== prevState.scrollTop) {
+        this.curScrollTop = this.state.scrollTop;
+      }
+      const {page, list, firstSize, totalPages, totalItems} = this.state;
+      this.curDatasource = this.memoDatasource(this.onDatasourceChange, list, page, totalPages, totalItems, firstSize);
     }
   }
 
@@ -405,11 +410,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     } else {
       this.prevScrollTop = curScrollTop;
       this.scrollTimer = setTimeout(this.checkScroll, 300);
-    }
-    this.props.onScroll && this.props.onScroll(curScrollTop, scrollState);
-    if (actionState !== 'prev-reclaiming' && actionState !== 'next-reclaiming' && this.props.onDatasourceChange) {
-      const {page, list, firstSize, sid, errorCode, totalPages, totalItems} = this.state;
-      this.memoDatasource(this.props.onDatasourceChange, sid, list, page, totalPages, totalItems, curScrollTop, firstSize, errorCode);
+      this.onScrollTopChange(curScrollTop, scrollState);
     }
   };
 
@@ -454,6 +455,14 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
 
   onRetryToNext = () => {
     this.setState({errorCode: ''}, this.onScrollToLower);
+  };
+
+  onDatasourceChange = (datasource: Datasource<T>) => {
+    this.props.onDatasourceChange && this.props.onDatasourceChange(datasource, this.curScrollTop);
+  };
+
+  onScrollTopChange = (scrollTop: number, direction: '' | 'up' | 'down') => {
+    this.props.onScroll && this.props.onScroll(scrollTop, direction, this.curDatasource!);
   };
 
   defaultTools = (

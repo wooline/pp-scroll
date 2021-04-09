@@ -8728,10 +8728,10 @@ postcss@^8.1.0:
     nanoid "^3.1.20"
     source-map "^0.6.1"
 
-pp-scroll@^1.0.5:
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/pp-scroll/-/pp-scroll-1.0.5.tgz#53a737d5da0adf20962073dd408109ba4a20523e"
-  integrity sha512-wI8McKv5ZYDnn3U32u81cMPe6ZUcujnRdMLYCfoWJGR7CDBeD39ghFtoSK/XXtEor/ENcck4xcyJvxhMPq+LEQ==
+pp-scroll@^1.0.11:
+  version "1.0.11"
+  resolved "https://registry.yarnpkg.com/pp-scroll/-/pp-scroll-1.0.11.tgz#a0b25ac7fd47618b966d99fbf0cef30beac763d7"
+  integrity sha512-7GWnIBvaqELhyLsJNvSighBNMYNpMORA06Kv4sri6JXm7RHVoLjBrWLAwyixff9QLThvoPnjmrL875Ui6L7n0g==
   dependencies:
     memoize-one "^5.1.1"
 

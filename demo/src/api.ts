@@ -74,7 +74,14 @@ async function getPhotosList(page: number, pageSize: number = 15) {
   return result;
 }
 
+function ddd() {
+  const promise = new Promise((res, rej) => {
+    setTimeout(res, 3000);
+  });
+  return promise;
+}
 export async function fetchPhotosList(page: number | [number, number]): Promise<{list: ListItem[]; listSummary: DualListSummary}> {
+  await ddd();
   if (typeof page === 'number') {
     return getPhotosList(page);
   } else {

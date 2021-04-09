@@ -1,12 +1,12 @@
 import React, {useState, useCallback, useEffect, useRef} from 'react';
-import PPScroll, {DataSource} from 'pp-scroll';
+import PPScroll, {Datasource} from 'pp-scroll';
 import {ListItem, fetchPhotosList} from './api';
 import logo from './logo.svg';
 import './App.css';
 import 'pp-scroll/css/index.css';
 
 function App() {
-  const [photoDatasource, setPhotoDatasource] = useState<DataSource | null>(null);
+  const [photoDatasource, setPhotoDatasource] = useState<Datasource | null>(null);
 
   useEffect(() => {
     const [pageStr = '1', scrollTopStr = '0'] = window.location.hash.replace('#', '').split('|');
@@ -47,19 +47,30 @@ function App() {
     setPhotoDatasource({list, page, totalPages, totalItems, firstSize, sid});
   }, []);
 
-  const locationTimer = useRef<{timer: any; data?: DataSource}>({timer: 0});
+  const scrollTimer = useRef<{timer: any; location: string}>({timer: 0, location: ''});
 
-  const onDatasourceChange = useCallback((datasource: DataSource) => {
-    console.log(datasource);
-    const obj = locationTimer.current;
-    obj.data = datasource;
+  const onScroll = useCallback((scrollTop: number, direction: string, datasource: Datasource) => {
+    if (!datasource) {
+      return;
+    }
+    const location = `#${datasource.page}|${scrollTop}`;
+    console.log('onScroll', location);
+    const obj = scrollTimer.current;
+    obj.location = location;
     if (!obj.timer) {
       obj.timer = setTimeout(() => {
         obj.timer = 0;
         // eslint-disable-next-line no-restricted-globals
-        history.replaceState(null, '', `#${obj.data?.page}|${obj.data?.scrollTop}`);
+        history.replaceState(null, '', obj.location);
       }, 1000);
     }
+  }, []);
+
+  const onDatasourceChange = useCallback((datasource: Datasource, scrollTop: number) => {
+    const location = `#${datasource.page}|${scrollTop}`;
+    console.log('onDatasourceChange', location);
+    // eslint-disable-next-line no-restricted-globals
+    history.replaceState(null, '', location);
   }, []);
 
   return (
@@ -69,7 +80,7 @@ function App() {
       </header>
       <div className="app-body">
         {photoDatasource && (
-          <PPScroll datasource={photoDatasource} onTurning={onTurning} onDatasourceChange={onDatasourceChange}>
+          <PPScroll datasource={photoDatasource} onTurning={onTurning} onDatasourceChange={onDatasourceChange} onScroll={onScroll}>
             {children}
           </PPScroll>
         )}
