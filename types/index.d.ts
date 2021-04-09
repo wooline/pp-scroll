@@ -28,7 +28,7 @@ interface State<T = any> extends Required<Datasource<T>> {
         [page: number]: Datasource<T>;
     };
     lockState: State<T> | null;
-    actionState: '' | 'next' | 'prev' | 'prev-reclaiming' | 'next-reclaiming';
+    actionState: '' | 'next' | 'prev' | 'prev-readied' | 'next-readied' | 'prev-executing' | 'next-executing';
     loadingState: number;
     errorCode: string;
     showTools: boolean;
@@ -42,7 +42,7 @@ declare class Component<T> extends PureComponent<Props<T>, State<T>> {
     scrollState: '' | 'up' | 'down';
     scrollTimer: number;
     toolsTimer: number;
-    reclaiming?: () => void;
+    onReady?: [number, number] | Datasource;
     listData: T[];
     prevPageNum: [number, number] | number;
     curDatasource?: Datasource;

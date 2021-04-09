@@ -1,3 +1,5 @@
+/* eslint-disable react/no-did-update-set-state */
+/* eslint-disable react/no-access-state-in-setstate */
 /* eslint-disable no-nested-ternary */
 import React, {ReactNode, PureComponent} from 'react';
 import memoizeOne from 'memoize-one';
@@ -39,7 +41,7 @@ interface State<T = any> extends Required<Datasource<T>> {
   cacheDatasource: Datasource<T> | null;
   sourceCache: {[page: number]: Datasource<T>};
   lockState: State<T> | null;
-  actionState: '' | 'next' | 'prev' | 'prev-reclaiming' | 'next-reclaiming';
+  actionState: '' | 'next' | 'prev' | 'prev-readied' | 'next-readied' | 'prev-executing' | 'next-executing';
   loadingState: number;
   showTools: boolean;
   errorCode: string;
@@ -148,7 +150,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
           if (datasource.page === curPage - 1) {
             lockState = {
               lockState: null,
-              actionState: 'prev-reclaiming',
+              actionState: 'prev-executing',
               loadingState: 0,
               errorCode: '',
               list: [...curList, ...datasource.list],
@@ -159,7 +161,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
           } else {
             lockState = {
               lockState: null,
-              actionState: 'next-reclaiming',
+              actionState: 'next-executing',
               loadingState: 0,
               errorCode: '',
               list: [...curList, ...datasource.list],
@@ -205,7 +207,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
 
   toolsTimer: number = 0;
 
-  reclaiming: number | (() => void) = 0;
+  onReady: number | Datasource | [number, number] = 0;
 
   listData: T[] = [];
 
@@ -274,58 +276,60 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
   memoShowTools = memoizeOne((switchTools: (show: boolean) => void, show: boolean) => switchTools(show));
 
   componentDidUpdate(prevProps: Props, prevState: State) {
-    const reclaiming = this.reclaiming;
     const iid = `#${this.iid}`;
     const curActionState = this.state.actionState;
-    const lockState = this.state.lockState;
-    if (typeof reclaiming === 'function') {
-      this.reclaiming = 0;
+    const prevActionState = prevState.actionState;
+    if (this.state.scrollTop !== prevState.scrollTop) {
+      this.curScrollTop = this.state.scrollTop;
+    }
+    if ((curActionState === 'prev' || curActionState === 'next') && prevActionState === '' && this.onReady) {
+      const onReady = this.onReady;
+      this.onReady = 0;
       Taro.nextTick(() => {
         Taro.createSelectorQuery()
           .select(iid)
           .boundingClientRect()
           .exec(([rect]: [any]) => {
-            this.reclaiming = rect.height;
+            this.onReady = rect.height;
             this.curScrollTop = -rect.top;
-            reclaiming();
+            const nextActionState = curActionState === 'prev' ? 'prev-readied' : 'next-readied';
+            if (Array.isArray(onReady)) {
+              this.setState({actionState: nextActionState});
+              this.onTurning(onReady[0], onReady[1]);
+            } else if (typeof onReady === 'object') {
+              this.setState({actionState: nextActionState, cacheDatasource: onReady});
+            }
           });
       });
-    } else if (lockState) {
+    } else if (this.state.lockState) {
       if (this.scrollState === '') {
-        // eslint-disable-next-line react/no-did-update-set-state
-        this.setState(lockState);
+        this.setState(this.state.lockState);
       }
-    } else {
-      const prevActionState = prevState.actionState;
-      if (curActionState === 'next-reclaiming' && prevActionState === 'next') {
-        Taro.nextTick(() => this.setState({actionState: ''}));
-      } else if (curActionState === 'prev-reclaiming' && prevActionState === 'prev') {
-        Taro.nextTick(() => {
-          Taro.createSelectorQuery()
-            .select(iid)
-            .boundingClientRect()
-            .exec(([rect]: [any]) => {
-              let scrollTop = -rect.top + (rect.height - reclaiming);
-              if (scrollTop === this.state.scrollTop) {
-                scrollTop++;
-              }
-              const {list, firstSize = 0} = this.state;
-              const firstList = list.slice(list.length - firstSize);
-              const secondList = list.slice(0, list.length - firstSize);
-              this.setState({actionState: '', scrollTop, list: [...firstList, ...secondList]});
-              this.curScrollTop = scrollTop;
-              Taro.nextTick(() => {
-                this.setState({forceShowPrevMore: false});
-              });
+    } else if (curActionState === 'next-executing' && prevActionState !== 'next-executing') {
+      Taro.nextTick(() => this.setState({actionState: ''}));
+    } else if (curActionState === 'prev-executing' && prevActionState !== 'prev-executing') {
+      Taro.nextTick(() => {
+        Taro.createSelectorQuery()
+          .select(iid)
+          .boundingClientRect()
+          .exec(([rect]: [any]) => {
+            let scrollTop = -rect.top + (rect.height - (this.onReady as number));
+            if (scrollTop === this.state.scrollTop) {
+              scrollTop++;
+            }
+            const {list, firstSize = 0} = this.state;
+            const firstList = list.slice(list.length - firstSize);
+            const secondList = list.slice(0, list.length - firstSize);
+            this.setState({actionState: '', scrollTop, list: [...firstList, ...secondList]});
+            this.curScrollTop = scrollTop;
+            Taro.nextTick(() => {
+              this.setState({forceShowPrevMore: false});
             });
-        });
-      }
+          });
+      });
     }
     this.memoShowTools(this.switchTools, !!this.scrollState || !!this.state.loadingState);
-    if (curActionState !== 'prev-reclaiming' && curActionState !== 'next-reclaiming') {
-      if (this.state.scrollTop !== prevState.scrollTop) {
-        this.curScrollTop = this.state.scrollTop;
-      }
+    if (curActionState === '' || curActionState === 'prev-readied' || curActionState === 'next-readied') {
       const {page, list, firstSize, totalPages, totalItems} = this.state;
       this.curDatasource = this.memoDatasource(this.onDatasourceChange, list, page, totalPages, totalItems, firstSize);
     }
@@ -333,30 +337,30 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
 
   onScrollToLower = () => {
     const {actionState, page, list, firstSize, sourceCache, totalPages, errorCode} = this.state;
-    if (!errorCode && (actionState === '' || actionState === 'prev')) {
+    if (!errorCode && (actionState === '' || actionState === 'prev-readied')) {
       const secondPage = typeof page === 'object' ? page[1] : page;
       const secondList = typeof page === 'object' ? list.slice(firstSize) : list;
       if (secondPage < totalPages) {
         const sid = Date.now();
-        const newState: Partial<State> = {
-          sid,
-          actionState: 'next',
-          lockState: null,
-        };
         const nextPage = secondPage + 1;
         let cacheDatasource = sourceCache[nextPage];
         if (cacheDatasource) {
           cacheDatasource = {...cacheDatasource, sid};
         }
+        const newState: Partial<State> = {
+          sid,
+          actionState: actionState === '' ? 'next' : 'next-readied',
+          lockState: null,
+        };
         if (actionState === '') {
           Object.assign(newState, {list: secondList, page: secondPage});
           if (cacheDatasource) {
-            this.reclaiming = () => this.setState({cacheDatasource});
+            this.onReady = cacheDatasource;
           } else {
-            this.reclaiming = () => this.onTurning(nextPage, sid);
+            this.onReady = [nextPage, sid];
           }
         } else if (cacheDatasource) {
-          Object.assign(newState, {cacheDatasource});
+          newState.cacheDatasource = cacheDatasource;
         } else {
           this.onTurning(nextPage, sid);
         }
@@ -367,30 +371,30 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
 
   onScrollToUpper = () => {
     const {actionState, page, list, firstSize, sourceCache, errorCode} = this.state;
-    if (!errorCode && (actionState === '' || actionState === 'next')) {
+    if (!errorCode && (actionState === '' || actionState === 'next-readied')) {
       const firstPage = typeof page === 'object' ? page[0] : page;
       const firstList = typeof page === 'object' ? list.slice(0, firstSize) : list;
       if (firstPage > 1) {
         const sid = Date.now();
-        const newState: Partial<State> = {
-          sid,
-          actionState: 'prev',
-          lockState: null,
-        };
         const prevPage = firstPage - 1;
         let cacheDatasource = sourceCache[prevPage];
         if (cacheDatasource) {
           cacheDatasource = {...cacheDatasource, sid};
         }
+        const newState: Partial<State> = {
+          sid,
+          actionState: actionState === '' ? 'prev' : 'prev-readied',
+          lockState: null,
+        };
         if (actionState === '') {
           Object.assign(newState, {list: firstList, page: firstPage});
           if (cacheDatasource) {
-            this.reclaiming = () => this.setState({cacheDatasource});
+            this.onReady = cacheDatasource;
           } else {
-            this.reclaiming = () => this.onTurning(prevPage, sid);
+            this.onReady = [prevPage, sid];
           }
         } else if (cacheDatasource) {
-          Object.assign(newState, {cacheDatasource});
+          newState.cacheDatasource = cacheDatasource;
         } else {
           this.onTurning(prevPage, sid);
         }
@@ -415,7 +419,9 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
     } else {
       this.prevScrollTop = curScrollTop;
       this.scrollTimer = setTimeout(this.checkScroll, 300);
-      this.onScrollTopChange(curScrollTop, scrollState);
+      if (actionState === '' || actionState === 'prev-readied' || actionState === 'next-readied') {
+        this.onScrollTopChange(curScrollTop, scrollState);
+      }
     }
   };
 
@@ -468,7 +474,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
   };
 
   onScrollTopChange = (scrollTop: number, direction: '' | 'up' | 'down') => {
-    this.props.onScroll && this.props.onScroll(scrollTop, direction, this.curDatasource!);
+    this.curDatasource && this.props.onScroll && this.props.onScroll(scrollTop, direction, this.curDatasource);
   };
 
   defaultTools = (
@@ -509,7 +515,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
       topArea,
       firstPage > 1 || forceShowPrevMore,
       firstPage - 1,
-      actionState === 'prev' || actionState === 'prev-reclaiming',
+      actionState === 'prev' || actionState === 'prev-executing',
       errorCode,
       this.onRetryToPrev
     );
@@ -517,7 +523,7 @@ class Component<T> extends PureComponent<Props<T>, State<T>> {
       bottomArea,
       secondPage < totalPages,
       secondPage + 1,
-      actionState === 'next' || actionState === 'next-reclaiming',
+      actionState === 'next' || actionState === 'next-executing',
       errorCode,
       this.onRetryToNext
     );

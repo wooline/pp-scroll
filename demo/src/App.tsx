@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-globals */
 import React, {useState, useCallback, useEffect, useRef} from 'react';
 import PPScroll, {Datasource} from 'pp-scroll';
 import {ListItem, fetchPhotosList} from './api';
@@ -50,9 +51,6 @@ function App() {
   const scrollTimer = useRef<{timer: any; location: string}>({timer: 0, location: ''});
 
   const onScroll = useCallback((scrollTop: number, direction: string, datasource: Datasource) => {
-    if (!datasource) {
-      return;
-    }
     const location = `#${datasource.page}|${scrollTop}`;
     console.log('onScroll', location);
     const obj = scrollTimer.current;
@@ -60,17 +58,20 @@ function App() {
     if (!obj.timer) {
       obj.timer = setTimeout(() => {
         obj.timer = 0;
-        // eslint-disable-next-line no-restricted-globals
         history.replaceState(null, '', obj.location);
       }, 1000);
     }
   }, []);
 
   const onDatasourceChange = useCallback((datasource: Datasource, scrollTop: number) => {
+    const obj = scrollTimer.current;
     const location = `#${datasource.page}|${scrollTop}`;
     console.log('onDatasourceChange', location);
-    // eslint-disable-next-line no-restricted-globals
     history.replaceState(null, '', location);
+    if (obj.timer) {
+      clearTimeout(obj.timer);
+      obj.timer = 0;
+    }
   }, []);
 
   return (
